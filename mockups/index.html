@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uberleap - Intelligent Automation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;800&display=swap');
+
+        body,
+        html {
+            box-sizing: border-box;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Manrope', sans-serif;
+            background-color: #ffffff;
+            /* Reset to white */
+            color: #111;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2.5rem 5vw;
+            width: 100%;
+            z-index: 10;
+        }
+
+        .logo {
+            height: 160px;
+            /* Doubled from 80px */
+            width: auto;
+            display: block;
+            /* Ensures no inline spacing issues */
+            margin-left: -35px;
+            /* Compensating for built-in whitespace in the PNG */
+        }
+
+        .nav-links {
+            display: none;
+            /* Hidden as requested */
+            gap: 3rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #111;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.6;
+        }
+
+        /* Main Content */
+        .hero {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 5vw;
+            /* Consistent viewport based padding */
+            padding-right: 5vw;
+            position: relative;
+            width: 100%;
+            /* Full width to match nav */
+            box-sizing: border-box;
+            /* Ensure padding is included in width */
+        }
+
+        h1 {
+            font-size: 4rem;
+            /* Reduced from 5.5rem */
+            font-weight: 300;
+            /* Reduced to Light */
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin: 0 0 2rem 0;
+            max-width: 900px;
+            z-index: 2;
+            color: #000;
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: #555;
+            max-width: 550px;
+            line-height: 1.6;
+            z-index: 2;
+            margin-bottom: 3rem;
+        }
+
+        /* CTA Button */
+        .cta-button {
+            display: none;
+            /* Hidden as requested */
+            align-items: center;
+            padding: 1.2rem 3rem;
+            background-color: #000;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            background-color: #222;
+        }
+
+        /* Footer Section */
+        footer {
+            padding: 3rem 5vw;
+            /* Consistent padding with header/hero */
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: auto;
+            background-color: rgba(255, 255, 255, 0.6);
+            /* More transparent footer */
+            backdrop-filter: blur(10px);
+        }
+
+        .footer-info p {
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .footer-info strong {
+            color: #000;
+            display: block;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .social-links {
+            display: none;
+            /* Hidden as requested */
+            gap: 1.5rem;
+        }
+
+        .social-links a {
+            color: #000;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+            h1 {
+                font-size: 3.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            nav {
+                padding: 1.5rem 5vw;
+            }
+
+            footer {
+                flex-direction: column;
+                gap: 2rem;
+                align-items: flex-start;
+            }
+
+            .logo {
+                height: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <!-- Inline style to force override for safety -->
+        <img src="../logo/logo3.png" alt="Uberleap" class="logo">
+        <div class="nav-links">
+            <a href="#">About</a>
+            <a href="#">Services</a>
+            <a href="#">Contact</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Intelligent Automation<br>for the Modern Era</h1>
+        <p class="tagline">We build the future with Blockchain and AI technologies, streamlining processes for a smarter
+            world.</p>
+        <div>
+            <a href="#" class="cta-button">Discover More</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-info">
+            <strong>Uberleap Technologies</strong>
+            <p>Barcelona, Spain</p>
+            <p>&copy; <span id="year"></span> Uberleap. All rights reserved.</p>
+        </div>
+        <div class="social-links">
+            <a href="#">LinkedIn</a>
+            <a href="#">Twitter</a>
+            <a href="#">Instagram</a>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+</body>
+
+</html>
