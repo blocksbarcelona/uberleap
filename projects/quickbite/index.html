@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuickBite · Dashboard Operativo</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f3f4f6; color: #1f2937; font-size: 13px; }
+
+/* ── HEADER ── */
+.hdr { background: #1558a0; color: #fff; padding: 0 20px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+.hdr-brand { font-size: 16px; font-weight: 700; }
+.hdr-right { font-size: 12px; opacity: .85; }
+
+/* ── FILTERS ── */
+.filters { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 9px 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.f-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+.f-sep { width: 1px; height: 22px; background: #e5e7eb; margin: 0 4px; }
+
+/* single-select buttons */
+.f-btn {
+  padding: 4px 12px; border: 1px solid #d1d5db; border-radius: 4px;
+  background: #fff; font-size: 12px; cursor: pointer; font-family: inherit;
+  color: #374151; transition: all .1s;
+}
+.f-btn:hover { border-color: #1558a0; color: #1558a0; }
+.f-btn.on { background: #1558a0; color: #fff; border-color: #1558a0; font-weight: 600; }
+
+/* multi-select city buttons — each city has its own color */
+.city-btn {
+  padding: 4px 12px; border: 2px solid #d1d5db; border-radius: 4px;
+  background: #fff; font-size: 12px; cursor: pointer; font-family: inherit;
+  color: #374151; transition: all .12s; font-weight: 500;
+  display: flex; align-items: center; gap: 5px;
+}
+.city-btn .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.city-btn:hover { opacity: .85; }
+.city-btn.on { color: #fff; }
+
+/* hint text */
+.f-hint { font-size: 10px; color: #9ca3af; font-style: italic; }
+
+/* city summary tag */
+.city-summary {
+  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px;
+  padding: 3px 10px; font-size: 11px; color: #1558a0; font-weight: 600;
+}
+
+/* ── BODY ── */
+.body { padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── KPI ── */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.kpi {
+  background: #fff; border: 1px solid #e5e7eb;
+  border-top: 3px solid #1558a0; border-radius: 4px;
+  padding: 14px 16px; box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+.kpi.g { border-top-color: #15803d; }
+.kpi.o { border-top-color: #b45309; }
+.kpi-lbl { font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; }
+.kpi-val { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 5px; }
+.kpi-val em { font-size: 13px; font-weight: 400; color: #6b7280; font-style: normal; }
+.kpi-chg { font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+.kpi-chg.pos { color: #15803d; } .kpi-chg.neg { color: #b91c1c; }
+.kpi-ref { font-size: 10px; color: #9ca3af; }
+
+/* ── CARDS ── */
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.06); overflow: hidden; }
+.card-hdr { padding: 11px 14px 9px; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: flex-start; }
+.card-title { font-size: 12px; font-weight: 700; color: #111827; }
+.card-sub { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+.badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+.b-blue   { background: #eff6ff; color: #1558a0; }
+.b-green  { background: #f0fdf4; color: #15803d; }
+.b-orange { background: #fff7ed; color: #b45309; }
+.card-body { padding: 12px 14px 14px; }
+.note { font-size: 10px; color: #b91c1c; font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 5px; }
+.note::before { content:''; display:inline-block; width:16px; height:2px; background:#b91c1c; border-radius:1px; }
+
+/* ── HEATMAP ── */
+.hm-wrap { overflow-x: auto; }
+table.hm { border-collapse: separate; border-spacing: 3px; }
+table.hm th { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; padding: 2px 4px; text-align: center; white-space: nowrap; }
+table.hm td.city-lbl { font-size: 11px; font-weight: 600; color: #374151; padding-right: 10px; text-align: right; white-space: nowrap; }
+table.hm td.cell { min-width: 48px; height: 26px; text-align: center; font-size: 10px; font-weight: 700; border-radius: 3px; cursor: default; }
+table.hm td.cell:hover { outline: 2px solid #1558a0; }
+
+/* ── HM TOGGLE ── */
+.toggle { display:flex; border:1px solid #d1d5db; border-radius:4px; overflow:hidden; }
+.tgl-btn { padding: 3px 10px; font-size: 11px; font-weight: 600; color: #6b7280; background: #fff; cursor: pointer; border: none; font-family: inherit; transition: all .1s; }
+.tgl-btn + .tgl-btn { border-left: 1px solid #d1d5db; }
+.tgl-btn.on { background: #1558a0; color: #fff; }
+.lgd { display:flex; align-items:center; gap:5px; font-size:10px; color:#9ca3af; }
+.lgd-bar { width:80px; height:10px; border-radius:2px; }
+
+/* comparison mode indicator */
+.cmp-badge {
+  display: none; background: #fef3c7; border: 1px solid #fcd34d;
+  border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #92400e;
+}
+.cmp-badge.show { display: inline-block; }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-brand">🍔 QuickBite · Dashboard Operativo</div>
+  <div class="hdr-right">Actualizado: <strong id="clock">--:--</strong> &nbsp;|&nbsp; 23 Mar 2026</div>
+</div>
+
+<div class="filters">
+  <!-- Período: single select -->
+  <span class="f-label">Período</span>
+  <button class="f-btn on" data-group="period" data-val="hoy">Hoy</button>
+  <button class="f-btn"    data-group="period" data-val="7d">7 días</button>
+  <button class="f-btn"    data-group="period" data-val="mes">Mes</button>
+
+  <div class="f-sep"></div>
+
+  <!-- Ciudad: multi-select -->
+  <span class="f-label">Ciudad</span>
+  <button class="f-btn on" id="btn-all-cities">Todas</button>
+  <button class="city-btn" data-city="BCN" style="--c:#1558a0">
+    <span class="dot" style="background:#1558a0"></span>Barcelona
+  </button>
+  <button class="city-btn" data-city="MAD" style="--c:#15803d">
+    <span class="dot" style="background:#15803d"></span>Madrid
+  </button>
+  <button class="city-btn" data-city="VLC" style="--c:#b45309">
+    <span class="dot" style="background:#b45309"></span>Valencia
+  </button>
+  <button class="city-btn" data-city="SEV" style="--c:#7c3aed">
+    <span class="dot" style="background:#7c3aed"></span>Sevilla
+  </button>
+  <span class="f-hint">Selección múltiple</span>
+  <span class="cmp-badge" id="cmpBadge">⇄ MODO COMPARACIÓN</span>
+
+  <div class="f-sep"></div>
+
+  <!-- Canal: single select -->
+  <span class="f-label">Canal</span>
+  <button class="f-btn on" data-group="canal" data-val="all">Todos</button>
+  <button class="f-btn"    data-group="canal" data-val="app">App</button>
+  <button class="f-btn"    data-group="canal" data-val="plat">Plataformas</button>
+  <button class="f-btn"    data-group="canal" data-val="pres">Presencial</button>
+</div>
+
+<div class="body">
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-lbl">Tiempo Medio Preparación</div>
+      <div class="kpi-val"><span id="kv-tmp">—</span> <em>min</em></div>
+      <div class="kpi-chg" id="kc-tmp">—</div>
+      <div class="kpi-ref">Umbral máximo: 8 min</div>
+    </div>
+    <div class="kpi g">
+      <div class="kpi-lbl">Entregas a Tiempo</div>
+      <div class="kpi-val"><span id="kv-et">—</span> <em>%</em></div>
+      <div class="kpi-chg" id="kc-et">—</div>
+      <div class="kpi-ref">Objetivo: ≥ 90%</div>
+    </div>
+    <div class="kpi o">
+      <div class="kpi-lbl">Valor Medio Ticket</div>
+      <div class="kpi-val"><span id="kv-vmt">—</span> <em>€</em></div>
+      <div class="kpi-chg" id="kc-vmt">—</div>
+      <div class="kpi-ref">Meta: 15.00 €</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Pedidos Totales</div>
+      <div class="kpi-val"><span id="kv-ped">—</span></div>
+      <div class="kpi-chg" id="kc-ped">—</div>
+      <div class="kpi-ref" id="kr-ped">—</div>
+    </div>
+  </div>
+
+  <!-- Row 1 -->
+  <div class="row2">
+    <div class="card">
+      <div class="card-hdr">
+        <div>
+          <div class="card-title" id="t-tmp">TMP por Tienda</div>
+          <div class="card-sub" id="s-tmp">Minutos · mayor a menor</div>
+        </div>
+        <span class="badge b-blue">TMP</span>
+      </div>
+      <div class="card-body">
+        <div style="position:relative;height:210px"><canvas id="cTMP"></canvas></div>
+        <div class="note">Umbral crítico: 8 min</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <div>
+          <div class="card-title" id="t-et">% Entregas a Tiempo por Franja</div>
+          <div class="card-sub" id="s-et">—</div>
+        </div>
+        <span class="badge b-green">%ET</span>
+      </div>
+      <div class="card-body">
+        <div style="position:relative;height:210px"><canvas id="cET"></canvas></div>
+        <div class="note">Umbral mínimo: 90%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2 -->
+  <div class="row3">
+    <div class="card">
+      <div class="card-hdr">
+        <div>
+          <div class="card-title">VMT por Canal</div>
+          <div class="card-sub" id="s-vmtc">Media en euros</div>
+        </div>
+        <span class="badge b-orange">VMT</span>
+      </div>
+      <div class="card-body">
+        <div style="position:relative;height:168px"><canvas id="cVMTc"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <div>
+          <div class="card-title" id="t-vmtt">VMT por Tienda</div>
+          <div class="card-sub">Media en euros</div>
+        </div>
+        <span class="badge b-orange">VMT</span>
+      </div>
+      <div class="card-body">
+        <div style="position:relative;height:168px"><canvas id="cVMTt"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <div>
+          <div class="card-title" id="t-ped">Pedidos por Franja</div>
+          <div class="card-sub" id="s-ped">Volumen acumulado</div>
+        </div>
+        <span class="badge b-blue">VOL</span>
+      </div>
+      <div class="card-body">
+        <div style="position:relative;height:168px"><canvas id="cPed"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="card">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Mapa de Calor · Ciudad × Franja Horaria</div>
+        <div class="card-sub">Pasa el cursor para ver el valor exacto</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="toggle">
+          <button class="tgl-btn on" onclick="setHM('tmp',this)">TMP (min)</button>
+          <button class="tgl-btn"   onclick="setHM('et',this)">% ET</button>
+        </div>
+        <div class="lgd">
+          <span id="lgL">5</span>
+          <div class="lgd-bar" id="lgBar" style="background:linear-gradient(90deg,#c6efce,#ffeb9c,#ffc7ce)"></div>
+          <span id="lgR">≥10 min</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body hm-wrap"><div id="hmRoot"></div></div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────
+const ALL_CITY_KEYS = ['BCN','MAD','VLC','SEV'];
+const CITY_NAMES  = { BCN:'Barcelona', MAD:'Madrid', VLC:'Valencia', SEV:'Sevilla' };
+const CITY_COLORS = { BCN:'#1558a0', MAD:'#15803d', VLC:'#b45309', SEV:'#7c3aed' };
+const CITY_COLORS_ALPHA = { BCN:'rgba(21,88,160,0.15)', MAD:'rgba(21,128,61,0.15)', VLC:'rgba(180,83,9,0.15)', SEV:'rgba(124,58,237,0.15)' };
+
+const STORES_BY_CITY = {
+  BCN: ['BCN-01 Eixample','BCN-02 Gràcia'],
+  MAD: ['MAD-01 Retiro','MAD-02 Chamberí'],
+  VLC: ['VLC-01 Centro'],
+  SEV: ['SEV-01 Triana','SEV-02 Nervión']
+};
+
+const CANAL_NAMES = ['App Propia','Plataformas','Presencial'];
+const CANAL_KEYS  = ['app','plat','pres'];
+
+const PERIOD_LABELS = {
+  hoy: ['11h','12h','13h','14h','15h','16h','17h','18h','19h','20h','21h','22h','23h'],
+  '7d': ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],
+  mes:  ['Sem 1','Sem 2','Sem 3','Sem 4']
+};
+const RUSH_HOY = [0,0,0,1,1,0,0,0,0,1,1,0,0];
+const RUSH_7D  = [0,0,0,0,1,1,0];
+const RUSH_MES = [0,0,1,1];
+function isRush(period,i){ return period==='hoy'?RUSH_HOY[i]: period==='7d'?RUSH_7D[i]:RUSH_MES[i]; }
+
+// ─────────────────────────────────────────────────────────────
+// DATA GENERATION (seeded per city+canal+period for stability)
+// ─────────────────────────────────────────────────────────────
+function hash(s){ let h=0; for(let i=0;i<s.length;i++) h=(Math.imul(31,h)+s.charCodeAt(i))|0; return (h>>>0)/4294967296; }
+function sr(seed,a,b){ return +(a+hash(seed)*(b-a)).toFixed(1); }
+
+const CITY_TMP_BASE  = { BCN:6.2, MAD:7.1, VLC:6.8, SEV:7.4 };
+const CITY_ET_BASE   = { BCN:93, MAD:89, VLC:91, SEV:87 };
+const CITY_VMT_BASE  = { BCN:15.4, MAD:14.2, VLC:13.9, SEV:14.6 };
+const CITY_PED_BASE  = { BCN:980, MAD:870, VLC:310, SEV:420 };
+const CANAL_TMP_MOD  = { all:0, app:-.5, plat:+.3, pres:+.2 };
+const CANAL_ET_MOD   = { all:0, app:+2, plat:-1, pres:0 };
+const CANAL_VMT_MOD  = { all:0, app:+1.8, plat:-.4, pres:-.8 };
+const CANAL_PED_FRAC = { all:1, app:.38, plat:.42, pres:.20 };
+const PERIOD_TMP_MOD = { hoy:0, '7d':+.15, mes:+.3 };
+const PED_PEAKS = {
+  hoy: [.3,.4,.8,1.5,1.2,.6,.5,.7,1.0,1.6,1.4,1.0,.6],
+  '7d': [.8,.9,1.0,1.0,1.4,1.6,1.2],
+  mes:  [.9,1.0,1.2,1.4]
+};
+
+function genCityData(city, canal, period){
+  const stores = STORES_BY_CITY[city];
+  const labels = PERIOD_LABELS[period];
+  const tmpBase = CITY_TMP_BASE[city] + CANAL_TMP_MOD[canal] + PERIOD_TMP_MOD[period];
+  const etBase  = CITY_ET_BASE[city]  + CANAL_ET_MOD[canal];
+  const vmtBase = CITY_VMT_BASE[city] + CANAL_VMT_MOD[canal];
+  const pedBase = Math.round(CITY_PED_BASE[city] * CANAL_PED_FRAC[canal]);
+
+  const tmpArr = stores.map((s,i)=>{
+    return Math.max(3, +(tmpBase + sr(s+canal+period+'tmp',-1.2,1.2)).toFixed(1));
+  }).sort((a,b)=>b-a);
+
+  const etCur = labels.map((_,i)=>{
+    const r = isRush(period,i);
+    return Math.min(100, Math.max(60, +(etBase + (r?-4:0) + sr(city+canal+period+'et'+i,-2,2)).toFixed(1)));
+  });
+  const etPrev = etCur.map(v=>Math.min(100,Math.max(60,+(v+(hash(city+canal+period+'prev')*4-2)).toFixed(1))));
+
+  const vmtCanal = CANAL_KEYS.map(c=>{
+    const mod = { app:+1.8, plat:-.4, pres:-.8 };
+    return Math.max(8, +(vmtBase + mod[c] + sr(city+c+period+'vmt',-.5,.5)).toFixed(2));
+  });
+
+  const vmtStore = stores.map(s=>{
+    return Math.max(8, +(vmtBase + sr(s+canal+period+'vmts',-.8,.8)).toFixed(2));
+  });
+
+  const peaks = PED_PEAKS[period];
+  const peakSum = peaks.reduce((a,b)=>a+b,0);
+  const pedArr = peaks.map((p,i)=>Math.max(0,Math.round(pedBase*p/peakSum + (hash(city+canal+period+'ped'+i)-.5)*12)));
+
+  const kpiTMP = +(tmpArr.reduce((a,b)=>a+b)/tmpArr.length).toFixed(1);
+  const kpiET  = +(etCur.reduce((a,b)=>a+b)/etCur.length).toFixed(1);
+  const kpiVMT = +(vmtCanal.reduce((a,b)=>a+b)/3).toFixed(2);
+  const kpiPed = pedArr.reduce((a,b)=>a+b);
+
+  return { city, stores, labels, tmpArr, etCur, etPrev, vmtCanal, vmtStore, pedArr, kpiTMP, kpiET, kpiVMT, kpiPed };
+}
+
+// Heatmap raw data (fixed, not affected by canal)
+const HM_DATA = (() => {
+  const tmp = ALL_CITY_KEYS.map(city=>
+    PERIOD_LABELS['hoy'].map((_,i)=>{
+      const b = CITY_TMP_BASE[city];
+      const rush = RUSH_HOY[i] ? 1.45 : .82;
+      return Math.max(3,+(b*rush + sr(city+i+'hmtmp',-.3,.3)).toFixed(1));
+    })
+  );
+  const et = ALL_CITY_KEYS.map(city=>
+    PERIOD_LABELS['hoy'].map((_,i)=>{
+      const b = CITY_ET_BASE[city];
+      const rush = RUSH_HOY[i] ? -6 : 0;
+      return Math.min(100,Math.max(65,+(b+rush+sr(city+i+'hmet',-1.5,1.5)).toFixed(1)));
+    })
+  );
+  return {tmp, et};
+})();
+
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+const state = {
+  cities: [], // empty = "Todas"
+  canal: 'all',
+  period: 'hoy'
+};
+let hmMetric = 'tmp';
+
+function activeCities(){ return state.cities.length===0 ? ALL_CITY_KEYS : state.cities; }
+function isAllCities(){ return state.cities.length===0; }
+function isComparison(){ return state.cities.length > 1; }
+
+// ─────────────────────────────────────────────────────────────
+// CHART HELPERS
+// ─────────────────────────────────────────────────────────────
+const BLUE='#1558a0', BLUE2='#5b9bd5', GREEN='#15803d', ORANGE='#b45309', RED='#b91c1c', GRID='#f3f4f6';
+Chart.defaults.font.family="'Segoe UI',Arial,sans-serif";
+Chart.defaults.font.size=11; Chart.defaults.color='#6b7280';
+
+function thrPlugin(axis,val,color,lbl){
+  return {id:'thr'+axis+val, afterDraw(chart){
+    const {ctx,chartArea:{top,bottom,left,right},scales}=chart;
+    const sc=scales[axis]; if(!sc)return;
+    const px=sc.getPixelForValue(val);
+    ctx.save(); ctx.beginPath();
+    if(axis==='x'){ctx.moveTo(px,top);ctx.lineTo(px,bottom);}
+    else{ctx.moveTo(left,px);ctx.lineTo(right,px);}
+    ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.setLineDash([5,4]); ctx.stroke();
+    if(lbl){ctx.setLineDash([]);ctx.fillStyle=color;ctx.font='bold 10px Segoe UI';
+      if(axis==='x') ctx.fillText(lbl,px+3,top+12);
+      else ctx.fillText(lbl,right-lbl.length*6-4,px-5);}
+    ctx.restore();
+  }};
+}
+
+function makeChart(id, type, data, options, plugins=[]){
+  return new Chart(document.getElementById(id),{type,data,options,plugins});
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHART INSTANCES
+// ─────────────────────────────────────────────────────────────
+let chartTMP = makeChart('cTMP','bar',
+  {labels:[], datasets:[]},
+  {
+    indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:{duration:350},
+    plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw.toFixed(1)} min`}}},
+    scales:{
+      x:{grid:{color:GRID},border:{display:false},min:0,max:13,ticks:{callback:v=>v+'min'}},
+      y:{grid:{display:false},border:{display:false},ticks:{color:'#374151',font:{size:10}}}
+    }
+  },
+  [thrPlugin('x',8,RED,'8 min')]
+);
+
+function rebuildTMPChart(indexAxis){
+  chartTMP.destroy();
+  chartTMP = makeChart('cTMP','bar',
+    {labels:[], datasets:[]},
+    {
+      indexAxis, responsive:true, maintainAspectRatio:false, animation:{duration:350},
+      plugins:{
+        legend:{display: indexAxis==='x'},
+        tooltip:{callbacks:{label:c=>` ${c.raw.toFixed(1)} min`}}
+      },
+      scales:{
+        x:{grid:{color: indexAxis==='y'?GRID:'rgba(0,0,0,0)'},border:{display:false},min:0,max:13,ticks:{callback:v=>v+'min'}},
+        y:{grid:{display: indexAxis==='x', color:GRID},border:{display:false},ticks:{color:'#374151',font:{size:10}}}
+      }
+    },
+    [thrPlugin('x',8,RED,'8 min')]
+  );
+}
+let _lastTMPAxis = 'y';
+
+const chartET = makeChart('cET','bar',
+  {labels:[], datasets:[]},
+  {
+    responsive:true, maintainAspectRatio:false, animation:{duration:350},
+    plugins:{
+      legend:{display:true, position:'top', align:'end', labels:{boxWidth:10,padding:8,font:{size:10}}},
+      tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label}: ${c.raw.toFixed(1)}%`}}
+    },
+    scales:{
+      x:{grid:{display:false},border:{display:false}},
+      y:{grid:{color:GRID},border:{display:false},min:70,max:100,ticks:{callback:v=>v+'%'}}
+    }
+  },
+  [thrPlugin('y',90,RED,'90%')]
+);
+
+const chartVMTc = makeChart('cVMTc','bar',
+  {labels:CANAL_NAMES, datasets:[]},
+  {
+    responsive:true, maintainAspectRatio:false, animation:{duration:350},
+    plugins:{legend:{display:false, position:'top', align:'end', labels:{boxWidth:10,padding:8,font:{size:10}}},
+             tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label||c.label}: ${c.raw.toFixed(2)}€`}}},
+    scales:{
+      x:{grid:{display:false},border:{display:false}},
+      y:{grid:{color:GRID},border:{display:false},min:0,max:22,ticks:{callback:v=>v+'€'}}
+    }
+  },
+  [thrPlugin('y',15,ORANGE,'15€ meta')]
+);
+
+const chartVMTt = makeChart('cVMTt','bar',
+  {labels:[], datasets:[]},
+  {
+    responsive:true, maintainAspectRatio:false, animation:{duration:350},
+    plugins:{legend:{display:false, position:'top', align:'end', labels:{boxWidth:10,padding:8,font:{size:10}}},
+             tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label||c.label}: ${c.raw.toFixed(2)}€`}}},
+    scales:{
+      x:{grid:{display:false},border:{display:false},ticks:{font:{size:10}}},
+      y:{grid:{color:GRID},border:{display:false},min:0,max:22,ticks:{callback:v=>v+'€'}}
+    }
+  }
+);
+
+const chartPed = makeChart('cPed','bar',
+  {labels:[], datasets:[]},
+  {
+    responsive:true, maintainAspectRatio:false, animation:{duration:350},
+    plugins:{legend:{display:false, position:'top', align:'end', labels:{boxWidth:10,padding:8,font:{size:10}}},
+             tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label||c.label}: ${c.raw} pedidos`}}},
+    scales:{
+      x:{grid:{display:false},border:{display:false}},
+      y:{grid:{color:GRID},border:{display:false}}
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// UPDATE
+// ─────────────────────────────────────────────────────────────
+function setKPI(id, val, delta, pos){
+  document.getElementById('kv-'+id).textContent = val;
+  const el = document.getElementById('kc-'+id);
+  el.textContent = (pos?'▲':'▼') + ' ' + delta;
+  el.className = 'kpi-chg ' + (pos?'pos':'neg');
+}
+
+function updateAll(){
+  const cities   = activeCities();
+  const { canal, period } = state;
+  const cmp      = isComparison();
+  const labels   = PERIOD_LABELS[period];
+
+  // Generate data for each active city
+  const cityData = cities.map(c => genCityData(c, canal, period));
+
+  // ── KPIs: average across selected cities ──
+  const avg = k => +(cityData.reduce((s,d)=>s+d[k],0)/cityData.length).toFixed(k==='kpiVMT'?2:1);
+  const totPed = cityData.reduce((s,d)=>s+d.kpiPed,0);
+
+  const kTMP = avg('kpiTMP');
+  const kET  = avg('kpiET');
+  const kVMT = +(cityData.reduce((s,d)=>s+d.kpiVMT,0)/cityData.length).toFixed(2);
+
+  setKPI('tmp', kTMP+' min',   (hash('tmp'+canal+period)*.6+.1).toFixed(1)+' min vs. período anterior', kTMP < 7);
+  setKPI('et',  kET+'%',       (hash('et'+canal+period)*2+.5).toFixed(1)+' pp vs. período anterior',    kET >= 90);
+  setKPI('vmt', kVMT+'€',      (hash('vmt'+canal+period)*.5+.1).toFixed(2)+'€ vs. período anterior',   kVMT >= 15);
+  setKPI('ped', totPed.toLocaleString('es-ES'),
+    Math.round(hash('ped'+canal+period)*200+50)+' vs. período anterior', true);
+  document.getElementById('kr-ped').textContent = cmp
+    ? cities.map(c=>CITY_NAMES[c]).join(' + ')
+    : (isAllCities() ? 'Red completa · '+cities.flatMap(c=>STORES_BY_CITY[c]).length+' tiendas'
+                     : CITY_NAMES[cities[0]]+' · '+STORES_BY_CITY[cities[0]].length+' tienda(s)');
+
+  // ── Subtitles & titles ──
+  const periodName = {hoy:'Hoy vs. ayer', '7d':'Esta semana vs. anterior', mes:'Este mes vs. anterior'};
+  document.getElementById('s-et').textContent  = cmp ? cities.map(c=>CITY_NAMES[c]).join(' · ') : periodName[period];
+  document.getElementById('s-ped').textContent = cmp ? cities.map(c=>CITY_NAMES[c]).join(' · ') : 'Volumen acumulado';
+  document.getElementById('t-et').textContent  = period==='hoy'?'% ET por Franja Horaria': period==='7d'?'% ET por Día':'% ET por Semana';
+  document.getElementById('t-ped').textContent = period==='hoy'?'Pedidos por Franja': period==='7d'?'Pedidos por Día':'Pedidos por Semana';
+  document.getElementById('t-tmp').textContent = cmp ? 'TMP Promedio por Ciudad' : 'TMP por Tienda';
+  document.getElementById('t-vmtt').textContent= cmp ? 'VMT Promedio por Ciudad' : 'VMT por Tienda';
+
+  // ── Show/hide comparison badge & legend ──
+  document.getElementById('cmpBadge').classList.toggle('show', cmp);
+  chartET.options.plugins.legend.display   = cmp;
+  chartPed.options.plugins.legend.display  = cmp;
+  chartVMTc.options.plugins.legend.display = cmp;
+  chartVMTt.options.plugins.legend.display = cmp;
+
+  // ─── CHART TMP ───
+  if(cmp){
+    // Comparison: one bar per city, horizontal (indexAxis y, cities on Y axis)
+    const neededAxis = 'y';
+    if(_lastTMPAxis !== neededAxis){ rebuildTMPChart(neededAxis); _lastTMPAxis = neededAxis; }
+    chartTMP.data.labels   = cities.map(c=>CITY_NAMES[c]);
+    chartTMP.data.datasets = [{
+      label:'TMP promedio (min)',
+      data: cityData.map(d=>d.kpiTMP),
+      backgroundColor: cities.map(c=>CITY_COLORS[c]),
+      borderRadius:3, barThickness:36
+    }];
+  } else {
+    // Single / all: one bar per store, horizontal
+    const neededAxis = 'y';
+    if(_lastTMPAxis !== neededAxis){ rebuildTMPChart(neededAxis); _lastTMPAxis = neededAxis; }
+    const stores = cityData.flatMap(d=>d.stores);
+    const tmps   = cityData.flatMap(d=>d.tmpArr);
+    chartTMP.data.labels   = stores;
+    chartTMP.data.datasets = [{
+      label:'TMP (min)',
+      data: tmps,
+      backgroundColor: cityData.flatMap((d,i)=>d.tmpArr.map(v=>v>8?RED:v>6.5?ORANGE:CITY_COLORS[cities[i]])),
+      borderRadius:3, barThickness:22
+    }];
+  }
+  chartTMP.update();
+
+  // ─── CHART ET ───
+  if(cmp){
+    // One dataset per city
+    chartET.data.labels   = labels;
+    chartET.data.datasets = cityData.map((d,i)=>({
+      label: CITY_NAMES[cities[i]],
+      data: d.etCur,
+      backgroundColor: CITY_COLORS[cities[i]],
+      borderRadius:2,
+      barThickness: Math.max(6, Math.floor(28/cities.length))
+    }));
+  } else {
+    // Aggregate current vs prev
+    const avg = (arr,key) => arr[0][key].map((_,i)=>+(arr.reduce((s,d)=>s+d[key][i],0)/arr.length).toFixed(1));
+    chartET.data.labels   = labels;
+    chartET.data.datasets = [
+      {label:'Período actual',   data:avg(cityData,'etCur'),  backgroundColor:BLUE,  borderRadius:2, barThickness:10},
+      {label:'Período anterior', data:avg(cityData,'etPrev'), backgroundColor:BLUE2, borderRadius:2, barThickness:10}
+    ];
+  }
+  chartET.update();
+
+  // ─── CHART VMT canal ───
+  if(cmp){
+    // Grouped: one dataset per city, 3 bars (canales) each
+    chartVMTc.data.labels = CANAL_NAMES;
+    chartVMTc.data.datasets = cityData.map((d,i)=>({
+      label: CITY_NAMES[cities[i]],
+      data: d.vmtCanal,
+      backgroundColor: CITY_COLORS[cities[i]],
+      borderRadius:2,
+      barThickness: Math.max(8, Math.floor(30/cities.length))
+    }));
+  } else {
+    const avgCanal = CANAL_KEYS.map((_,ci)=>+(cityData.reduce((s,d)=>s+d.vmtCanal[ci],0)/cityData.length).toFixed(2));
+    chartVMTc.data.labels = CANAL_NAMES;
+    chartVMTc.data.datasets = [{
+      label:'VMT (€)', data:avgCanal,
+      backgroundColor:[BLUE,BLUE2,'#a8c4e0'], borderRadius:3, barThickness:40
+    }];
+  }
+  chartVMTc.update();
+
+  // ─── CHART VMT tienda ───
+  if(cmp){
+    // One bar per city (average VMT)
+    chartVMTt.data.labels   = cities.map(c=>CITY_NAMES[c]);
+    chartVMTt.data.datasets = [{
+      label:'VMT promedio',
+      data: cityData.map(d=>d.kpiVMT),
+      backgroundColor: cities.map(c=>CITY_COLORS[c]),
+      borderRadius:3, barThickness:40
+    }];
+  } else {
+    const stores = cityData.flatMap(d=>d.stores);
+    const vmts   = cityData.flatMap(d=>d.vmtStore);
+    chartVMTt.data.labels   = stores.map(s=>s.split(' ')[0]);
+    chartVMTt.data.datasets = [{
+      label:'VMT (€)', data:vmts,
+      backgroundColor: cityData.flatMap((d,i)=>d.vmtStore.map(v=>v>=15?GREEN:v>=13?CITY_COLORS[cities[i]]:ORANGE)),
+      borderRadius:3, barThickness:30
+    }];
+  }
+  chartVMTt.update();
+
+  // ─── CHART PEDIDOS ───
+  if(cmp){
+    chartPed.data.labels   = labels;
+    chartPed.data.datasets = cityData.map((d,i)=>({
+      label: CITY_NAMES[cities[i]],
+      data: d.pedArr,
+      backgroundColor: CITY_COLORS[cities[i]],
+      borderRadius:2,
+      barThickness: Math.max(6, Math.floor(28/cities.length))
+    }));
+  } else {
+    const sumPed = labels.map((_,i)=>cityData.reduce((s,d)=>s+d.pedArr[i],0));
+    chartPed.data.labels   = labels;
+    chartPed.data.datasets = [{
+      label:'Pedidos', data:sumPed, backgroundColor:BLUE2, borderRadius:3, barThickness:16
+    }];
+  }
+  chartPed.update();
+
+  // ─── HEATMAP ───
+  buildHM(hmMetric);
+}
+
+// ─────────────────────────────────────────────────────────────
+// HEATMAP
+// ─────────────────────────────────────────────────────────────
+function hmColor(v,metric){
+  if(metric==='tmp'){
+    if(v<=5.5) return {bg:'#c6efce',fg:'#1a5c1a'};
+    if(v<=7)   return {bg:'#d9efca',fg:'#1a5c1a'};
+    if(v<=8)   return {bg:'#ffeb9c',fg:'#7d4e00'};
+    if(v<=9.5) return {bg:'#ffcc99',fg:'#7d2000'};
+    return        {bg:'#ffc7ce',fg:'#8b0000'};
+  } else {
+    if(v>=95)  return {bg:'#c6efce',fg:'#1a5c1a'};
+    if(v>=90)  return {bg:'#d9efca',fg:'#1a5c1a'};
+    if(v>=85)  return {bg:'#ffeb9c',fg:'#7d4e00'};
+    if(v>=80)  return {bg:'#ffcc99',fg:'#7d2000'};
+    return        {bg:'#ffc7ce',fg:'#8b0000'};
+  }
+}
+
+function buildHM(metric){
+  hmMetric = metric;
+  const hours = PERIOD_LABELS['hoy'];
+  const cities = activeCities();
+  const data   = metric==='tmp' ? HM_DATA.tmp : HM_DATA.et;
+  const unit   = metric==='tmp' ? 'min' : '%';
+
+  document.getElementById('lgBar').style.background = metric==='tmp'
+    ? 'linear-gradient(90deg,#c6efce,#ffeb9c,#ffc7ce)'
+    : 'linear-gradient(90deg,#ffc7ce,#ffeb9c,#c6efce)';
+  document.getElementById('lgL').textContent = metric==='tmp' ? '5' : '≤80%';
+  document.getElementById('lgR').textContent = metric==='tmp' ? '≥10 min' : '100%';
+
+  const root = document.getElementById('hmRoot');
+  const tbl  = document.createElement('table'); tbl.className='hm';
+  const thead = tbl.createTHead();
+  const hRow  = thead.insertRow();
+  const th0   = document.createElement('th'); th0.style.width='90px'; hRow.appendChild(th0);
+  hours.forEach(h=>{ const th=document.createElement('th'); th.textContent=h; hRow.appendChild(th); });
+
+  const tbody = tbl.createTBody();
+  cities.forEach(city=>{
+    const ci = ALL_CITY_KEYS.indexOf(city);
+    if(ci<0) return;
+    const tr = tbody.insertRow();
+    // City label with color dot
+    const td0 = tr.insertCell(); td0.className='city-lbl';
+    td0.innerHTML = `<span style="display:inline-flex;align-items:center;gap:5px">
+      <span style="width:8px;height:8px;border-radius:50%;background:${CITY_COLORS[city]};display:inline-block;flex-shrink:0"></span>
+      ${CITY_NAMES[city]}
+    </span>`;
+    data[ci].forEach((val,hi)=>{
+      const td=tr.insertCell(); td.className='cell';
+      const {bg,fg}=hmColor(val,metric);
+      td.style.background=bg; td.style.color=fg;
+      td.textContent=val.toFixed(1);
+      td.title=`${CITY_NAMES[city]} · ${hours[hi]}: ${val.toFixed(1)}${unit}`;
+    });
+  });
+  tbl.appendChild(tbody);
+  root.innerHTML=''; root.appendChild(tbl);
+}
+
+function setHM(m,btn){
+  document.querySelectorAll('.tgl-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); buildHM(m);
+}
+
+// ─────────────────────────────────────────────────────────────
+// FILTER LOGIC
+// ─────────────────────────────────────────────────────────────
+// Single-select (period, canal)
+document.querySelectorAll('.f-btn[data-group]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const g = btn.dataset.group;
+    document.querySelectorAll(`.f-btn[data-group="${g}"]`).forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    state[g] = btn.dataset.val;
+    updateAll();
+  });
+});
+
+// Multi-select cities
+const allBtn = document.getElementById('btn-all-cities');
+
+function refreshCityButtons(){
+  const sel = state.cities;
+  // "Todas" is active only when nothing specific is selected
+  allBtn.classList.toggle('on', sel.length===0);
+
+  document.querySelectorAll('.city-btn').forEach(btn=>{
+    const city = btn.dataset.city;
+    const on   = sel.includes(city);
+    btn.classList.toggle('on', on);
+    if(on){
+      btn.style.background     = CITY_COLORS[city];
+      btn.style.borderColor    = CITY_COLORS[city];
+    } else {
+      btn.style.background  = '#fff';
+      btn.style.borderColor = '#d1d5db';
+    }
+  });
+}
+
+allBtn.addEventListener('click',()=>{
+  state.cities = [];
+  refreshCityButtons();
+  updateAll();
+});
+
+document.querySelectorAll('.city-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const city = btn.dataset.city;
+    const idx  = state.cities.indexOf(city);
+    if(idx>=0) state.cities.splice(idx,1);
+    else       state.cities.push(city);
+    // If nothing selected, revert to "Todas"
+    if(state.cities.length===0) allBtn.classList.add('on');
+    refreshCityButtons();
+    updateAll();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// CLOCK
+// ─────────────────────────────────────────────────────────────
+function tick(){ document.getElementById('clock').textContent=new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}); }
+setInterval(tick,30000); tick();
+
+// INIT
+refreshCityButtons();
+updateAll();
+</script>
+</body>
+</html>
